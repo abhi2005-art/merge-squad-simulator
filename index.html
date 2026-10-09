@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Merge Squad · Merge Sort Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&family=Nunito:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#0a0f1f; --panel:#121a33; --panel2:#18224a; --ink:#f6f1e4; --muted:#9aa6c7; --line:#2b3a6e;
+  --red:#e63946; --gold:#ffc93c; --blue:#2f74ff; --cyan:#3de0ff; --green:#3ddc97; --purple:#a77bff; --pink:#ff5d9e; --orange:#ff9f1c;
+  --hand:"Patrick Hand","Comic Sans MS",cursive; --comic:"Bangers",Impact,sans-serif; --body:"Nunito",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  background:
+   radial-gradient(circle at 15% 0%,rgba(230,57,70,.22),transparent 40%),
+   radial-gradient(circle at 90% 10%,rgba(47,116,255,.25),transparent 45%),
+   radial-gradient(rgba(255,255,255,.07) 1.2px,transparent 1.4px) 0 0/16px 16px,
+   var(--bg);
+  min-height:100vh;overflow-x:hidden}
+.wrap{max-width:1320px;margin:0 auto;padding:0 16px 48px;position:relative}
+
+/* ---------- floating doodles ---------- */
+.doodle{position:absolute;pointer-events:none;opacity:.9;z-index:0}
+.doodle svg{width:100%;height:100%;overflow:visible}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-10px) rotate(calc(var(--r,0deg) + 6deg))}}
+.doodle{animation:floaty 5s ease-in-out infinite;transform:rotate(var(--r,0deg))}
+
+/* ---------- header ---------- */
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;padding:22px 0 14px;position:relative;z-index:2}
+.brand{display:flex;gap:14px;align-items:center}
+.emblem{width:76px;height:76px;filter:drop-shadow(4px 4px 0 rgba(0,0,0,.45));transform:rotate(-4deg);transition:transform .3s}
+.emblem:hover{transform:rotate(4deg) scale(1.08)}
+h1{font:400 clamp(30px,5vw,52px)/1 var(--comic);letter-spacing:.04em;margin:0;color:var(--gold);text-shadow:3px 3px 0 var(--red),6px 6px 0 rgba(0,0,0,.4)}
+.tag{font:400 20px var(--hand);color:var(--cyan);margin:4px 0 0}
+.tabs{display:flex;gap:8px}
+.tab{font:400 20px var(--comic);letter-spacing:.06em;color:var(--ink);background:var(--panel2);border:3px solid var(--ink);border-radius:10px;padding:6px 16px;cursor:pointer;box-shadow:4px 4px 0 #000;transition:transform .12s,box-shadow .12s,background .2s}
+.tab:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #000}
+.tab[aria-selected=true]{background:var(--red)}
+
+/* ---------- panels ---------- */
+.card{position:relative;background:var(--panel);border:3px solid var(--ink);border-radius:14px;padding:14px 16px;box-shadow:6px 6px 0 #000;z-index:1}
+.card h2{font:400 20px var(--comic);letter-spacing:.08em;margin:0 0 10px;color:var(--gold);display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:10px;height:10px;background:var(--red);transform:rotate(45deg);border:2px solid var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;margin-top:18px}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+@media(max-width:1020px){.grid{grid-template-columns:1fr}}
+
+/* ---------- controls ---------- */
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row+.row{margin-top:10px}
+.sp{flex:1}
+label.f{display:flex;gap:6px;align-items:center;color:var(--muted);font-weight:700;font-size:13px}
+select,input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:7px 10px}
+input[type=text]{font-family:var(--mono);flex:1;min-width:190px}
+input[type=range]{accent-color:var(--red)}
+.btn{font:400 18px var(--comic);letter-spacing:.05em;color:var(--ink);background:var(--panel2);border:3px solid var(--ink);border-radius:10px;padding:5px 14px;cursor:pointer;box-shadow:3px 3px 0 #000;transition:transform .1s,box-shadow .1s,background .2s}
+.btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:5px 5px 0 #000;background:var(--line)}
+.btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.go{background:var(--red);min-width:110px}
+.btn.go:hover:not(:disabled){background:#ff4b58}
+.sw{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;cursor:pointer;user-select:none;padding:5px 10px;border:2px solid var(--line);border-radius:999px;background:var(--bg)}
+.sw input{appearance:none;width:30px;height:17px;border-radius:9px;background:#2b3a6e;position:relative;margin:0;cursor:pointer;transition:background .2s}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw input:checked{background:var(--green)}
+.sw input:checked::after{transform:translateX(13px)}
+.scrub{display:flex;gap:10px;align-items:center;margin-top:12px}
+.scrub input{flex:1}
+.scrub span{font:700 12.5px var(--mono);color:var(--muted);min-width:76px;text-align:right}
+#err{color:var(--pink);font-weight:700;font-size:13px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* ---------- stage tracker ---------- */
+.stages{display:flex;flex-wrap:wrap;gap:8px}
+.stg{font:400 17px var(--comic);letter-spacing:.05em;padding:4px 12px;border:3px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted);cursor:pointer;transition:all .25s}
+.stg:hover{border-color:var(--gold)}
+.stg.past{color:var(--ink);border-color:var(--blue)}
+.stg.on{background:var(--gold);color:#1a1200;border-color:var(--ink);transform:rotate(-2deg) scale(1.06);box-shadow:3px 3px 0 #000}
+
+/* ---------- bars ---------- */
+#stageBox{position:relative;height:340px;user-select:none}
+#band{position:absolute;top:36px;bottom:24px;left:0;width:0;border-radius:12px;background:rgba(47,116,255,.16);border:2px dashed rgba(47,116,255,.6);opacity:0;transition:left .45s cubic-bezier(.3,.8,.3,1),width .45s cubic-bezier(.3,.8,.3,1),opacity .3s}
+#lane{position:absolute;left:0;right:0;top:182px;border-top:3px dashed var(--line);opacity:0;transition:opacity .3s}
+.lanelab{position:absolute;left:6px;font:400 15px var(--comic);letter-spacing:.08em;color:var(--muted);opacity:0;transition:opacity .3s}
+#splitLine{position:absolute;top:36px;bottom:24px;width:0;border-left:3px dashed var(--gold);opacity:0;transition:left .45s ease,opacity .3s}
+.bar{position:absolute;left:0;bottom:24px;border:3px solid #000;border-radius:9px 9px 3px 3px;background:#5a6aa0;color:#fff;display:flex;justify-content:center;align-items:flex-start;padding-top:4px;font:700 14px var(--mono);text-shadow:1px 1px 0 rgba(0,0,0,.6);
+  transition:transform .6s cubic-bezier(.34,1.35,.5,1),height .4s ease,background .3s,box-shadow .3s,opacity .3s;will-change:transform}
+.bar.dim{background:#242d50;color:#6b77a3;opacity:.7}
+.bar.active{background:var(--blue)}
+.bar.left{background:var(--blue)}
+.bar.right{background:var(--purple)}
+.bar.cmp{background:var(--orange);box-shadow:0 0 0 4px rgba(255,159,28,.35);animation:pulse .8s ease-in-out infinite}
+.bar.placed{background:var(--pink);box-shadow:0 0 0 4px rgba(255,93,158,.3)}
+.bar.merged{background:var(--green)}
+.bar.sorted{background:#22c07d}
+.bar.hop{animation:hop .6s ease both}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(255,159,28,.1)}}
+@keyframes hop{40%{translate:0 -16px}}
+.idx{position:absolute;bottom:2px;font:700 11px var(--mono);color:var(--muted);text-align:center}
+#vs{position:absolute;top:2px;left:0;padding:2px 12px;background:var(--gold);color:#1a1200;border:3px solid #000;border-radius:999px;font:400 20px var(--comic);letter-spacing:.05em;white-space:nowrap;opacity:0;transform:translate(-50%,8px) scale(.7) rotate(-4deg);transition:opacity .25s,transform .35s cubic-bezier(.34,1.6,.5,1),left .35s;box-shadow:3px 3px 0 #000}
+#vs.show{opacity:1;transform:translate(-50%,0) scale(1) rotate(-4deg)}
+#sfx{position:absolute;right:8px;top:0;font:400 44px var(--comic);letter-spacing:.06em;color:var(--gold);-webkit-text-stroke:2px #000;text-shadow:4px 4px 0 var(--red);pointer-events:none;opacity:0}
+#sfx.pop{animation:sfxPop .9s ease both}
+@keyframes sfxPop{0%{opacity:0;transform:scale(.3) rotate(-14deg)}25%{opacity:1;transform:scale(1.2) rotate(6deg)}70%{opacity:1;transform:scale(1) rotate(-3deg)}100%{opacity:0;transform:scale(1) translateY(-14px) rotate(-3deg)}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:12.5px;color:var(--muted);font-weight:700}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border:2px solid #000;border-radius:3px;margin-right:6px;vertical-align:-2px;background:var(--c)}
+
+/* ---------- tree ---------- */
+#treeBox{position:relative}
+#edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#edges line{stroke:var(--line);stroke-width:3;transition:opacity .4s,stroke .3s}
+#edges line.hid{opacity:0}
+#edges line.hot{stroke:var(--gold)}
+.tn{position:absolute;height:38px;display:flex;border:2px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg);transition:opacity .4s,transform .45s cubic-bezier(.34,1.4,.5,1),border-color .3s,background .3s,box-shadow .3s}
+.tn.hid{opacity:0;transform:translateY(-14px) scale(.85)}
+.tn .c{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;font:700 12.5px var(--mono);border-right:1px solid var(--line)}
+.tn .c:last-child{border-right:0}
+.tn.s-waiting{border-style:dashed;color:var(--muted)}
+.tn.s-split{border-style:dashed;border-color:var(--gold);color:var(--muted)}
+.tn.s-active{border-color:var(--blue);background:rgba(47,116,255,.2)}
+.tn.s-merging{border-color:var(--orange);background:rgba(255,159,28,.18)}
+.tn.s-sorted{border-color:var(--green);background:rgba(61,220,151,.18)}
+.tn.s-done{opacity:.4}
+.tn.cur{box-shadow:0 0 0 4px rgba(255,201,60,.4);transform:translateY(-2px)}
+
+/* ---------- merge view ---------- */
+.mrow{display:flex;align-items:center;gap:6px;margin:10px 0 14px;flex-wrap:wrap}
+.mlab{width:108px;font:700 12.5px var(--mono);color:var(--muted)}
+.cell{position:relative;width:42px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:9px;font:700 14px var(--mono);background:var(--bg);transition:opacity .3s}
+.cell.taken{opacity:.25}
+.cell.ptr{border-color:var(--gold)}
+.cell.ptr::after{content:attr(data-p) " ↑";position:absolute;bottom:-18px;font:700 11px var(--mono);color:var(--gold)}
+.cell.cmp{border-color:var(--orange);background:rgba(255,159,28,.25);animation:wig .5s ease}
+.cell.out{border-color:var(--green);background:rgba(61,220,151,.18)}
+.cell.new{border-color:var(--pink);background:rgba(255,93,158,.25);animation:drop .5s cubic-bezier(.34,1.5,.5,1)}
+.cell.empty{border-style:dashed;color:transparent}
+@keyframes drop{from{transform:translateY(-34px) scale(1.25);opacity:0}}
+@keyframes wig{30%{transform:rotate(-5deg)}60%{transform:rotate(5deg)}}
+.muted{color:var(--muted);font-size:13.5px;margin:4px 0}
+
+/* ---------- bot ---------- */
+#botCard{background:linear-gradient(180deg,#1c2a63,#121a33)}
+.botrow{display:flex;gap:6px;align-items:flex-end}
+#bot{width:150px;flex:none;animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-6px) rotate(1.5deg)}}
+#bot .pupil{transition:transform .25s}
+#bot .arm{transform-origin:30px 118px;animation:wave 1.4s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
+#bot .bulb{animation:blink 1.4s steps(2) infinite}
+@keyframes blink{50%{fill:#fff}}
+#bot .spark{opacity:0}
+#bot.party .spark{opacity:1;animation:twinkle .6s ease-in-out infinite alternate}
+@keyframes twinkle{from{transform:scale(.6)}to{transform:scale(1.2)}}
+.bubble{position:relative;flex:1;min-height:140px;background:var(--ink);color:#141a33;border:3px solid #000;border-radius:16px;padding:12px 14px;font:400 21px/1.25 var(--hand);box-shadow:4px 4px 0 #000}
+.bubble::before{content:"";position:absolute;left:-14px;bottom:30px;border:10px solid transparent;border-right:14px solid #000;border-left:0}
+.bubble::after{content:"";position:absolute;left:-9px;bottom:32px;border:8px solid transparent;border-right:11px solid var(--ink);border-left:0}
+.bname{font:400 15px var(--comic);letter-spacing:.1em;color:var(--red);display:block;margin-bottom:2px}
+#quizBox{margin-top:12px;display:none}
+#quizBox.on{display:block}
+#quizBox .qb{display:flex;gap:8px;flex-wrap:wrap}
+#quizBox .btn{flex:1;font-size:17px}
+#score{font:700 12px var(--mono);color:var(--muted);margin-left:auto}
+
+/* ---------- code / stats / log ---------- */
+.stack{list-style:none;margin:0;padding:0;display:flex;flex-direction:column-reverse;gap:4px;max-height:200px;overflow:auto}
+.stack li{font:700 12px var(--mono);padding:5px 10px;border-radius:7px;background:var(--bg);border:2px solid var(--line);color:var(--muted)}
+.stack li.top{color:var(--ink);border-color:var(--gold);background:rgba(255,201,60,.12)}
+pre.code{margin:0;font:12.5px/1.65 var(--mono);overflow-x:auto}
+pre.code div{padding:0 8px;border-radius:5px;white-space:pre;transition:background .2s,color .2s}
+pre.code div.hl{background:var(--gold);color:#1a1200;font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:6px 10px}
+.stat b{display:block;font:400 28px var(--comic);color:var(--cyan);letter-spacing:.04em}
+.stat small{color:var(--muted);font-size:11.5px;font-weight:700}
+.stat.wide{grid-column:span 2}
+.meter{height:9px;border-radius:5px;background:#243059;overflow:hidden;margin-top:6px;border:1px solid #000}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));transition:width .4s}
+#log{list-style:none;margin:0;padding:0;max-height:230px;overflow:auto;font-size:13px}
+#log li{padding:5px 8px;border-radius:7px;cursor:pointer;color:var(--muted);border-left:4px solid transparent}
+#log li:hover{background:var(--panel2)}
+#log li.now{background:rgba(255,201,60,.14);color:var(--ink);border-left-color:var(--gold)}
+#log li.fut{opacity:.35}
+.keys{font-size:12.5px;color:var(--muted)}
+kbd{font:700 11px var(--mono);border:2px solid var(--line);border-bottom-width:3px;border-radius:5px;padding:0 5px;background:var(--panel2)}
+
+/* ---------- intel tab ---------- */
+.six{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:18px}
+.mis{padding-top:46px}
+.mis .num{position:absolute;top:-14px;left:14px;width:46px;height:46px;border-radius:50%;background:var(--red);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font:400 26px var(--comic);box-shadow:3px 3px 0 #000}
+.mis h3{margin:0 0 4px;font:400 22px var(--comic);letter-spacing:.06em;color:var(--gold)}
+.mis p{margin:0;color:#d9def0}
+.mis .btn{margin-top:10px;font-size:15px}
+.cx{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:18px}
+.cx .card b{display:block;font:400 28px var(--comic);color:var(--cyan);letter-spacing:.04em}
+.cx .card span{color:var(--muted);font-weight:700;font-size:13px}
+#chart{width:100%;height:auto;display:block}
+.clg{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;font-weight:700;margin-bottom:6px}
+.clg i{display:inline-block;width:22px;height:4px;border-radius:2px;margin-right:6px;vertical-align:3px}
+
+.tabs{flex-wrap:wrap}
+#bot{cursor:pointer}
+#why{margin-top:12px;background:rgba(61,224,255,.1);border:2px dashed var(--cyan);border-radius:12px;padding:8px 12px;font-size:13.5px;color:#d9f6ff}
+#why b{display:block;font:400 15px var(--comic);letter-spacing:.08em;color:var(--cyan)}
+.bot-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.bot-actions .btn{font-size:15px;padding:3px 12px}
+.lvl{display:flex;align-items:center;gap:8px;margin:7px 0;font:700 12px var(--mono);color:var(--muted)}
+.lvl span{width:64px}
+.lvl .track{flex:1;height:14px;background:#243059;border:2px solid #000;border-radius:7px;overflow:hidden}
+.lvl .track i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .4s}
+.lvl em{font-style:normal;width:46px;text-align:right;color:var(--ink)}
+.race{display:grid;grid-template-columns:140px 1fr 64px;gap:10px;align-items:center;margin:12px 0;font-weight:800}
+.race .track{height:28px;background:#243059;border:3px solid #000;border-radius:9px;overflow:hidden}
+.race .track i{display:block;height:100%;width:0;border-right:3px solid #000}
+.race b{font:700 15px var(--mono);text-align:right}
+.race.win .nm::after{content:" 🏆"}
+@media(max-width:560px){.race{grid-template-columns:100px 1fr 52px}}
+.langs{display:flex;gap:8px;flex-wrap:wrap}
+.langs .btn[aria-pressed=true]{background:var(--red)}
+pre.big{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:12px;margin:12px 0 0;font:13px/1.6 var(--mono);overflow:auto;white-space:pre;color:#e8ecff}
+details.q{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0}
+details.q[open]{border-color:var(--gold)}
+details.q summary{cursor:pointer;font-weight:800;list-style:none}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::before{content:"❓ "}
+details.q p{margin:8px 0 2px;color:#d9def0}
+.conf{position:fixed;top:-40px;width:30px;height:30px;pointer-events:none;z-index:50;animation:fall 2.4s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.8}}
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t th{color:var(--gold);font:400 16px var(--comic);letter-spacing:.06em}
+table.t tr.tot td{font-weight:800;color:var(--cyan)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+@media(max-width:760px){.pair{grid-template-columns:1fr}}
+.stack{max-height:260px}
+footer{margin-top:26px;text-align:center;color:var(--muted);font:400 18px var(--hand)}
+@media(max-width:560px){.botrow{flex-direction:column;align-items:center}.bubble::before,.bubble::after{display:none}#bot{width:120px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- reusable doodle symbols (all original artwork) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="d-bolt" viewBox="0 0 60 100"><path d="M36 4 L8 56 H28 L20 96 L52 38 H32 Z" fill="#ffc93c" stroke="#000" stroke-width="5" stroke-linejoin="round"/></symbol>
+    <symbol id="d-star" viewBox="0 0 100 100"><path d="M50 6 L62 38 L96 40 L69 61 L79 94 L50 75 L21 94 L31 61 L4 40 L38 38 Z" fill="#ff5d9e" stroke="#000" stroke-width="5" stroke-linejoin="round"/></symbol>
+    <symbol id="d-burst" viewBox="0 0 120 120"><path d="M60 4 L72 34 L104 20 L88 50 L116 64 L86 76 L96 108 L66 94 L56 116 L44 90 L12 104 L28 74 L4 58 L34 46 L20 16 L50 32 Z" fill="#e63946" stroke="#000" stroke-width="5" stroke-linejoin="round"/></symbol>
+    <symbol id="d-squig" viewBox="0 0 120 40"><path d="M4 22 Q18 2 32 22 T60 22 T88 22 T116 22" fill="none" stroke="#3de0ff" stroke-width="6" stroke-linecap="round"/></symbol>
+    <symbol id="d-spark" viewBox="0 0 60 60"><path d="M30 2 Q33 27 58 30 Q33 33 30 58 Q27 33 2 30 Q27 27 30 2Z" fill="#fff" stroke="#000" stroke-width="3" stroke-linejoin="round"/></symbol>
+    <symbol id="d-shield" viewBox="0 0 100 100"><path d="M50 4 L90 22 V56 C90 76 70 91 50 97 C30 91 10 76 10 56 V22 Z" fill="#e63946" stroke="#f6f1e4" stroke-width="5" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <!-- decorative doodles -->
+  <div class="doodle" style="--r:-12deg;left:-6px;top:120px;width:46px;height:76px"><svg><use href="#d-bolt"/></svg></div>
+  <div class="doodle" style="--r:14deg;right:10px;top:96px;width:60px;height:60px;animation-delay:.8s"><svg><use href="#d-star"/></svg></div>
+  <div class="doodle" style="--r:-6deg;right:22%;top:18px;width:110px;height:36px;animation-delay:1.4s"><svg><use href="#d-squig"/></svg></div>
+  <div class="doodle" style="--r:10deg;left:36%;top:6px;width:56px;height:56px;animation-delay:.4s"><svg><use href="#d-burst"/></svg></div>
+
+  <div class="doodle" style="--r:8deg;right:-6px;top:560px;width:70px;height:70px;animation-delay:1s"><svg><use href="#d-burst"/></svg></div>
+  <div class="doodle" style="--r:-10deg;left:-12px;top:760px;width:54px;height:54px;animation-delay:.6s"><svg><use href="#d-star"/></svg></div>
+  <div class="doodle" style="--r:12deg;right:4px;top:1180px;width:44px;height:72px;animation-delay:1.8s"><svg><use href="#d-bolt"/></svg></div>
+  <div class="doodle" style="--r:-4deg;left:2px;top:1000px;width:100px;height:34px;animation-delay:.2s"><svg><use href="#d-squig"/></svg></div>
+  <header>
+    <div class="brand">
+      <svg class="emblem" viewBox="0 0 100 100" role="img" aria-label="Merge Squad emblem">
+        <use href="#d-shield"/>
+        <path d="M24 30 L46 52 M76 30 L54 52" stroke="#ffc93c" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M24 30 H36 M24 30 V42 M76 30 H64 M76 30 V42" stroke="#ffc93c" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M50 52 V80 M38 70 L50 82 L62 70" stroke="#f6f1e4" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M50 8 l3 7 7 .6 -5.4 4.6 1.8 7 -6.4 -4 -6.4 4 1.8 -7 -5.4 -4.6 7 -.6z" fill="#ffc93c" stroke="#000" stroke-width="1.5" stroke-linejoin="round" transform="translate(0 -1) scale(1)"/>
+      </svg>
+      <div>
+        <h1>Merge Squad</h1>
+        <p class="tag">Merge Sort Simulator · Divide. Compare. Merge. Conquer!</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-sim" data-v="sim" aria-selected="true">Mission</button>
+      <button class="tab" role="tab" id="tab-intel" data-v="intel" aria-selected="false">Intel</button>
+      <button class="tab" role="tab" id="tab-race" data-v="race" aria-selected="false">Race</button>
+      <button class="tab" role="tab" id="tab-code" data-v="code" aria-selected="false">Code</button>
+      <button class="tab" role="tab" id="tab-viva" data-v="viva" aria-selected="false">Viva</button>
+    </nav>
+  </header>
+
+  <!-- ===================== MISSION (simulator) ===================== -->
+  <section id="v-sim">
+    <div class="card">
+      <div class="row">
+        <label class="f">Squad
+          <select id="preset">
+            <option value="example">Classic mission</option>
+            <option value="random">Random</option>
+            <option value="reversed">Reversed</option>
+            <option value="sorted">Already sorted</option>
+            <option value="nearly">Nearly sorted</option>
+            <option value="dups">With duplicates</option>
+          </select>
+        </label>
+        <label class="f">Size <input id="size" type="range" min="4" max="16" value="8"><b id="sizeV" style="font-family:var(--mono);color:var(--ink);min-width:20px">8</b></label>
+        <input id="inp" type="text" value="38, 27, 43, 3, 9, 82, 10, 15" aria-label="Your own numbers">
+        <button class="btn" id="load">Load</button>
+        <button class="btn" id="shuffle">Shuffle</button>
+      </div>
+      <div id="err"></div>
+      <div class="row">
+        <button class="btn" id="bReset" title="Restart (Home)">⏮</button>
+        <button class="btn" id="bPrev" title="Back (←)">◀ Back</button>
+        <button class="btn go" id="bPlay" title="Space">▶ Play</button>
+        <button class="btn" id="bNext" title="Next (→)">Next ▶</button>
+        <button class="btn" id="bEnd" title="End">⏭</button>
+        <label class="f">Speed <input id="speed" type="range" min="1" max="10" value="5"></label>
+        <span class="sp"></span>
+        <label class="sw" title="Mergy pauses and asks you to predict the next move"><input type="checkbox" id="quizOn"> Quiz me</label>
+        <label class="sw" title="Mergy explains in detail and gives the reason behind each step"><input type="checkbox" id="detailOn" checked> Detailed</label>
+        <label class="sw"><input type="checkbox" id="soundOn"> Sound</label>
+      </div>
+      <div class="scrub"><input id="scrub" type="range" min="0" max="1" value="0" aria-label="Timeline"><span id="stepLbl">1 / 1</span></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Mission stages <small style="font:400 15px var(--hand);color:var(--muted)">(click to jump)</small></h2>
+      <div class="stages" id="stages"></div>
+    </div>
+
+    <div class="grid">
+      <div class="col">
+        <section class="card">
+          <h2>The Squad · Array A</h2>
+          <div id="stageBox">
+            <div id="band"></div>
+            <div id="lane"></div>
+            <div class="lanelab" id="lab1" style="top:40px">TEMP COPIES L &amp; R</div>
+            <div class="lanelab" id="lab2" style="top:188px">ARRAY A</div>
+            <div id="splitLine"></div>
+            <div id="bars"></div>
+            <div id="vs"></div>
+            <div id="sfx"></div>
+          </div>
+          <div class="legend">
+            <span style="--c:var(--blue)">left team</span>
+            <span style="--c:var(--purple)">right team</span>
+            <span style="--c:var(--orange)">face-off</span>
+            <span style="--c:var(--pink)">just written</span>
+            <span style="--c:var(--green)">merged</span>
+            <span style="--c:#22c07d">sorted</span>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Recursion tree <small style="font:400 15px var(--hand);color:var(--muted)">(split ↓ · merge ↑)</small></h2>
+          <div id="treeBox"><svg id="edges" preserveAspectRatio="none"></svg></div>
+        </section>
+        <section class="card">
+          <h2>Merge zone</h2>
+          <div id="merge"></div>
+        </section>
+        <div class="pair">
+          <section class="card"><h2>Call stack</h2><ul class="stack" id="stack"></ul></section>
+          <section class="card"><h2>Work per level</h2><div id="lvls"></div><p class="muted">Each merge level handles at most n items. Levels × n is the O(n log n) total.</p></section>
+        </div>
+        <section class="card"><h2>Pseudocode</h2><pre class="code" id="code"></pre></section>
+      </div>
+
+      <div class="col">
+        <section class="card" id="botCard">
+          <h2>Mergy says… <span id="score"></span></h2>
+          <div class="botrow">
+            <svg id="bot" viewBox="0 0 160 190" role="img" aria-label="Mergy the doodle robot">
+              <!-- cape -->
+              <path d="M44 100 Q18 150 30 182 Q80 168 130 182 Q142 150 116 100 Z" fill="#e63946" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M44 112 Q38 150 42 170" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+              <!-- legs -->
+              <rect x="56" y="152" width="14" height="26" rx="5" fill="#2f74ff" stroke="#000" stroke-width="4"/>
+              <rect x="90" y="152" width="14" height="26" rx="5" fill="#2f74ff" stroke="#000" stroke-width="4"/>
+              <!-- body -->
+              <rect x="44" y="104" width="72" height="56" rx="16" fill="#2f74ff" stroke="#000" stroke-width="4"/>
+              <path d="M80 116 l5 10 11 1 -8 7 2.5 11 -10.5 -6 -10.5 6 2.5 -11 -8 -7 11 -1z" fill="#ffc93c" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+              <!-- arms -->
+              <path d="M44 120 Q24 126 22 146" fill="none" stroke="#000" stroke-width="12" stroke-linecap="round"/>
+              <path d="M44 120 Q24 126 22 146" fill="none" stroke="#f6f1e4" stroke-width="5" stroke-linecap="round"/>
+              <g class="arm"><path d="M116 120 Q138 112 140 88" fill="none" stroke="#000" stroke-width="12" stroke-linecap="round"/><path d="M116 120 Q138 112 140 88" fill="none" stroke="#f6f1e4" stroke-width="5" stroke-linecap="round"/><circle cx="140" cy="86" r="8" fill="#ffc93c" stroke="#000" stroke-width="3"/></g>
+              <!-- antenna -->
+              <path d="M80 30 V14" stroke="#000" stroke-width="5" stroke-linecap="round"/>
+              <circle class="bulb" id="bulb" cx="80" cy="10" r="7" fill="#3de0ff" stroke="#000" stroke-width="3"/>
+              <!-- head -->
+              <rect x="34" y="28" width="92" height="78" rx="26" fill="#f6f1e4" stroke="#000" stroke-width="4"/>
+              <!-- mask band -->
+              <path d="M34 58 Q80 46 126 58 V84 Q80 94 34 84 Z" fill="#e63946" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+              <!-- eyes -->
+              <ellipse cx="60" cy="70" rx="14" ry="12" fill="#fff" stroke="#000" stroke-width="3"/>
+              <ellipse cx="100" cy="70" rx="14" ry="12" fill="#fff" stroke="#000" stroke-width="3"/>
+              <g id="pupils" class="pupil"><circle id="pl" cx="60" cy="71" r="5.5" fill="#000"/><circle id="pr" cx="100" cy="71" r="5.5" fill="#000"/></g>
+              <path id="wink" d="M48 70 Q60 62 72 70" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" opacity="0"/>
+              <!-- mouth -->
+              <path id="mouth" d="M62 96 Q80 108 98 96" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- cheek doodles -->
+              <path d="M40 92 l8 -3 M40 97 l8 -1" stroke="#e63946" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M120 92 l-8 -3 M120 97 l-8 -1" stroke="#e63946" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- party sparks -->
+              <g class="spark"><use href="#d-spark" x="2" y="30" width="26" height="26"/><use href="#d-spark" x="130" y="40" width="22" height="22"/><use href="#d-spark" x="136" y="120" width="18" height="18"/></g>
+            </svg>
+            <div class="bubble"><span class="bname">MERGY</span><span id="bubbleText"></span></div>
+          </div>
+          <div id="quizBox"><div class="qb" id="qb"></div></div>
+          <div id="why"></div>
+          <div class="bot-actions"><button class="btn" id="factBtn">Fun fact</button><button class="btn" id="repeatBtn">Repeat</button></div>
+        </section>
+        <section class="card">
+          <h2>Scoreboard</h2>
+          <div class="stats">
+            <div class="stat"><b id="sC">0</b><small>comparisons</small></div>
+            <div class="stat"><b id="sW">0</b><small>writes to A</small></div>
+            <div class="stat"><b id="sD">0</b><small>recursion depth</small></div>
+            <div class="stat"><b id="sN">0</b><small>n (elements)</small></div>
+            <div class="stat wide"><b id="sNL">0</b><small>comparisons vs n·log₂n</small><div class="meter"><i id="meter"></i></div></div>
+          </div>
+        </section>
+        <section class="card"><h2>Mission log <small style="font:400 15px var(--hand);color:var(--muted)">(click to jump)</small></h2><ul id="log"></ul></section>
+        <p class="keys"><kbd>←</kbd> <kbd>→</kbd> step · <kbd>Space</kbd> play/pause · <kbd>Home</kbd>/<kbd>End</kbd> · <kbd>Q</kbd> quiz</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== INTEL ===================== -->
+  <section id="v-intel" hidden>
+    <div class="six" id="six"></div>
+    <div class="cx">
+      <div class="card"><span>Best case</span><b>Θ(n log n)</b></div>
+      <div class="card"><span>Average case</span><b>Θ(n log n)</b></div>
+      <div class="card"><span>Worst case</span><b>Θ(n log n)</b></div>
+      <div class="card"><span>Extra space</span><b>O(n)</b></div>
+      <div class="card"><span>Recurrence</span><b style="font-size:22px">T(n) = 2T(n/2) + n</b></div>
+      <div class="card"><span>Stable? In-place?</span><b style="font-size:22px">Stable · Not in-place</b></div>
+    </div>
+    <section class="card" style="margin-top:18px">
+      <h2>Cost per level <small id="lvlNote" style="font:400 15px var(--hand);color:var(--muted)"></small></h2>
+      <div style="overflow-x:auto"><table class="t" id="lvlTable"></table></div>
+      <p class="muted">Every level merges at most n items and there are about log₂n levels, so the total is n × log₂n. This is the recursion-tree method.</p>
+    </section>
+    <section class="card" style="margin-top:18px">
+      <h2>Master Theorem check</h2>
+      <p style="margin:0">T(n) = 2T(n/2) + Θ(n) has a = 2, b = 2 and f(n) = n. Since n^(log₂2) = n matches f(n), this is Case 2, so T(n) = Θ(n log n).</p>
+    </section>
+    <section class="card" style="margin-top:18px">
+      <h2>Power-up lab: measured comparisons</h2>
+      <div class="row" style="margin-bottom:8px">
+        <label class="f">Largest n <input id="labN" type="range" min="8" max="64" step="8" value="32"><b id="labNV" style="font-family:var(--mono);color:var(--ink)">32</b></label>
+        <button class="btn" id="labRun">Run experiment</button>
+      </div>
+      <div class="clg">
+        <span><i style="background:var(--cyan)"></i>Merge Sort (avg of 20 random runs)</span>
+        <span><i style="background:var(--orange)"></i>Quadratic, n(n−1)/2</span>
+        <span><i style="background:var(--muted)"></i>n·log₂n</span>
+      </div>
+      <svg id="chart" viewBox="0 0 640 300" role="img" aria-label="Comparisons versus n"></svg>
+    </section>
+  </section>
+
+  <!-- ===================== RACE ===================== -->
+  <section id="v-race" hidden>
+    <div class="card" style="margin-top:6px">
+      <h2>Sorting race: who needs the fewest comparisons?</h2>
+      <div class="row">
+        <label class="f">n <input id="raceN" type="range" min="8" max="64" step="8" value="32"><b id="raceNV" style="font-family:var(--mono);color:var(--ink)">32</b></label>
+        <label class="f">Input
+          <select id="raceKind">
+            <option value="random">Random</option>
+            <option value="reversed">Reversed</option>
+            <option value="sorted">Already sorted</option>
+            <option value="nearly">Nearly sorted</option>
+          </select>
+        </label>
+        <button class="btn go" id="raceRun">▶ Start race</button>
+      </div>
+      <div id="raceBoard"></div>
+      <p id="raceNote" class="muted" style="font-size:15px"></p>
+      <p class="muted">* Quick Sort uses the last element as pivot. ** Bubble Sort stops early when a pass makes no swaps. Bars show comparisons made; shorter is better.</p>
+    </div>
+  </section>
+
+  <!-- ===================== CODE ===================== -->
+  <section id="v-code" hidden>
+    <div class="card" style="margin-top:6px">
+      <h2>Implementation</h2>
+      <div class="langs" id="langs"></div>
+      <pre class="big" id="codeView"></pre>
+      <div class="row" style="margin-top:12px"><button class="btn" id="copyCode">Copy code</button><span class="muted">Same logic the simulator runs, in four languages.</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== VIVA ===================== -->
+  <section id="v-viva" hidden>
+    <div class="card" style="margin-top:6px">
+      <h2>Viva Q&amp;A: be ready to explain</h2>
+      <div class="row"><button class="btn" id="vivaAll">Expand all</button><span class="muted">Click a question to reveal the answer.</span></div>
+      <div id="vivaList"></div>
+    </div>
+  </section>
+
+  <footer>Built for DAA · CIA 3(b) · Merge Sort prototype</footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const fmt = a => "[" + a.join(", ") + "]";
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const PSEUDO = [
+ "MergeSort(A, lo, hi):",
+ "  if lo >= hi: return          # base case",
+ "  mid = floor((lo + hi) / 2)",
+ "  MergeSort(A, lo, mid)        # left team",
+ "  MergeSort(A, mid+1, hi)      # right team",
+ "  Merge(A, lo, mid, hi)",
+ "",
+ "Merge(A, lo, mid, hi):",
+ "  L = A[lo..mid];  R = A[mid+1..hi]",
+ "  while i < |L| and j < |R|:",
+ "    if L[i] <= R[j]: A[k++] = L[i++]",
+ "    else:            A[k++] = R[j++]",
+ "  copy leftovers into A"
+];
+const STAGES = ["1 · Initial array","2 · Divide","3 · Recursive split","4 · Compare","5 · Merge","6 · Sorted!"];
+const BRIEF = [
+ ["Initial array","Start with an unsorted array A of n elements. Nobody has been compared yet."],
+ ["Divide","Compute mid = floor((lo+hi)/2) and cut A into a left half and a right half. Splitting costs O(1)."],
+ ["Recursive split","Keep splitting each half. A piece with one element is sorted by definition (base case). That gives about log₂n levels."],
+ ["Compare","To merge two sorted halves, copy them into L and R and compare only the front elements L[i] and R[j]."],
+ ["Merge","Write the smaller front element into A and move that pointer. When one side runs out, copy the rest. Each level of merging costs O(n)."],
+ ["Sorted array","After the top-level merge, A is sorted. Work = n per level × log₂n levels = Θ(n log n)."]
+];
+
+/* ================= record every step of the algorithm ================= */
+function record(values){
+  const n = values.length;
+  const A = values.map((v, id) => ({id, v}));
+  const steps = [], tree = {}, stack = [];
+  let cmp = 0, wr = 0, mg = null;
+  const key = (l, h) => l + "-" + h;
+  const vs = arr => arr.map(x => x.v);
+  const ids = arr => arr.map(x => x.id);
+
+  function snap(o){
+    steps.push(Object.assign({
+      order: ids(A), cmpN: cmp, wr, stack: stack.slice(), depth: stack.filter(s => s.startsWith("MergeSort")).length,
+      tree: JSON.parse(JSON.stringify(tree)),
+      m: mg ? {lo: mg.lo, mid: mg.mid, hi: mg.hi, L: ids(mg.L), R: ids(mg.R), i: mg.i, j: mg.j, out: ids(mg.out)} : null
+    }, o));
+  }
+
+  tree[key(0, n-1)] = {st: "waiting", vals: vs(A)};
+  snap({stage: 0, lines: [], mood: "happy", sfx: "READY!", tech: "Initial array.",
+    bot: `Hi, I'm Mergy! Our squad is ${fmt(vs(A))}. All ${n} heroes are out of order. My plan: split the team in half again and again until everyone is alone, then merge them back in sorted order. Press Next!`});
+
+  function ms(lo, hi){
+    const k = key(lo, hi);
+    stack.push(`MergeSort(A, ${lo}, ${hi})`);
+    tree[k].st = "active";
+    if (lo >= hi){
+      tree[k].st = "sorted";
+      snap({stage: 2, lines: [1], range: [lo, hi], cur: k, base: true, mood: "wink", sfx: "SOLO!",
+        tech: "Base case reached.",
+        bot: `${A[lo].v} is all alone now! One element is always sorted, so this is my base case. I return to the caller.`});
+      stack.pop(); return;
+    }
+    const mid = (lo + hi) >> 1;
+    tree[key(lo, mid)] = {st: "waiting", vals: vs(A.slice(lo, mid+1))};
+    tree[key(mid+1, hi)] = {st: "waiting", vals: vs(A.slice(mid+1, hi+1))};
+    snap({stage: lo === 0 && hi === n-1 ? 1 : 2, lines: [2, 3, 4], range: [lo, hi], split: mid, cur: k, mood: "think", sfx: "SPLIT!",
+      quiz: hi > lo ? {type: "mid", lo, hi, mid} : null,
+      tech: `mid = ${mid}`,
+      bot: `SPLIT! Positions ${lo} to ${hi} hold ${fmt(vs(A.slice(lo, hi+1)))}. The middle is floor((${lo}+${hi})/2) = ${mid}. Left team: ${fmt(vs(A.slice(lo, mid+1)))}. Right team: ${fmt(vs(A.slice(mid+1, hi+1)))}. I'll sort the left one first!`});
+    tree[k].st = "split";
+    ms(lo, mid);
+    ms(mid + 1, hi);
+    stack.push(`Merge(A, ${lo}, ${mid}, ${hi})`);
+    doMerge(lo, mid, hi, k);
+    stack.pop(); stack.pop();
+  }
+
+  function doMerge(lo, mid, hi, k){
+    mg = {lo, mid, hi, L: A.slice(lo, mid+1), R: A.slice(mid+1, hi+1), i: 0, j: 0, out: []};
+    tree[k].st = "merging";
+    snap({stage: 4, lines: [5, 8], range: [lo, hi], cur: k, mood: "think", sfx: "ASSEMBLE!", tech: "Copy halves to L and R.",
+      bot: `Both halves are already sorted! I copy them into L = ${fmt(vs(mg.L))} and R = ${fmt(vs(mg.R))} and lift them up, so I can safely rewrite A[${lo}..${hi}].`});
+    while (mg.i < mg.L.length && mg.j < mg.R.length){
+      cmp++;
+      const a = mg.L[mg.i], b = mg.R[mg.j], takeL = a.v <= b.v;
+      snap({stage: 3, lines: [9], range: [lo, hi], cur: k, cmp: [a.id, b.id], cmpVals: [a.v, b.v], mood: "focus", sfx: "VS!",
+        quiz: {type: "cmp", a: a.v, b: b.v, ans: takeL ? "L" : "R", pos: lo + mg.out.length},
+        tech: `${a.v} vs ${b.v}`,
+        bot: `FACE-OFF! L[${mg.i}] = ${a.v} versus R[${mg.j}] = ${b.v}. ` + (takeL ? `${a.v} ≤ ${b.v}, so ${a.v} from L wins the spot. (Ties go left, which keeps the sort stable!)` : `${b.v} < ${a.v}, so ${b.v} from R wins the spot.`)});
+      const it = takeL ? mg.L[mg.i++] : mg.R[mg.j++];
+      mg.out.push(it); wr++;
+      snap({stage: 4, lines: [takeL ? 10 : 11], range: [lo, hi], cur: k, placed: it.id, justOut: true, mood: "happy", sfx: "SNAP!",
+        tech: "Write and advance pointer.",
+        bot: `Snap! ${it.v} goes into A[${lo + mg.out.length - 1}] and the ${takeL ? "L" : "R"} pointer steps forward.`});
+    }
+    for (const side of ["L", "R"]){
+      const src = side === "L" ? mg.L : mg.R, other = side === "L" ? "R" : "L";
+      while ((side === "L" ? mg.i : mg.j) < src.length){
+        const it = src[side === "L" ? mg.i++ : mg.j++];
+        mg.out.push(it); wr++;
+        snap({stage: 4, lines: [12], range: [lo, hi], cur: k, placed: it.id, justOut: true, mood: "happy", sfx: "EASY!",
+          tech: "Copy leftover.",
+          bot: `${other} has run out of heroes, so no more fights. ${it.v} from ${side} just drops into A[${lo + mg.out.length - 1}] for free. No comparison needed!`});
+      }
+    }
+    mg.out.forEach((it, x) => A[lo + x] = it);
+    mg = null;
+    tree[k].st = "sorted"; tree[k].vals = vs(A.slice(lo, hi+1));
+    if (tree[key(lo, mid)]) tree[key(lo, mid)].st = "done";
+    if (tree[key(mid+1, hi)]) tree[key(mid+1, hi)].st = "done";
+    snap({stage: 4, lines: [5], range: [lo, hi], cur: k, doneRange: true, mood: "wow", sfx: "MERGED!", tech: "Merge complete.",
+      bot: `MERGED! A[${lo}..${hi}] is now sorted: ${fmt(vs(A.slice(lo, hi+1)))}.` + (lo === 0 && hi === n-1 ? "" : " Back up the call stack I go!")});
+  }
+
+  ms(0, n - 1);
+  snap({stage: 5, lines: [], final: true, mood: "party", sfx: "VICTORY!", tech: "Sorted.",
+    bot: `VICTORY! The squad is sorted: ${fmt(vs(A))}. It took ${cmp} comparisons and ${wr} writes for n = ${n}. (n·log₂n is about ${(n * Math.log2(n)).toFixed(1)}, so we're right on target!)`});
+  return steps;
+}
+
+/* ================= explanations (short + detailed + per-level work) ================= */
+function annotate(list){
+  const lw = [], L2 = Math.ceil(Math.log2(n));
+  list.forEach(s => {
+    if (s.placed !== undefined){ const d = s.depth - 1; lw[d] = (lw[d] || 0) + 1; }
+    s.lw = lw.slice();
+    const size = s.range ? s.range[1] - s.range[0] + 1 : n;
+    if (s.final){
+      s.short = `Sorted! ${s.cmpN} comparisons, ${s.wr} writes.`;
+      s.why = `Merging happens on ${L2} level${L2 > 1 ? "s" : ""}, and each level handles at most n = ${n} items, so the total is O(n log n). Measured: ${s.cmpN} comparisons against the n·log₂n bound of ${(n * Math.log2(n)).toFixed(1)}.`;
+    } else if (s.stage === 0){
+      s.short = `Start: ${n} unsorted numbers.`;
+      s.why = `Divide and conquer means: split the problem, solve the small pieces, combine the answers. For Merge Sort the cost follows T(n) = 2T(n/2) + n, which solves to Θ(n log n).`;
+    } else if (s.base){
+      s.short = `One element: already sorted.`;
+      s.why = `The recursion has to stop somewhere, and a single item is sorted by definition, so it costs 0 comparisons. A full recursion tree has n leaves and 2n − 1 nodes.`;
+    } else if (s.split !== undefined){
+      s.short = `Split at mid = ${s.split}.`;
+      s.why = `Splitting only computes an index, so no data moves and the cost is O(1). The tree is now at level ${s.depth - 1}, where each piece holds about n / 2^${s.depth - 1} items.`;
+    } else if (s.cmp){
+      s.short = `Compare ${s.cmpVals[0]} and ${s.cmpVals[1]}.`;
+      s.why = `Both halves are already sorted, so the smallest unplaced item of each half sits at its front. Comparing just the two fronts is enough. Merging k items needs at most k − 1 comparisons.`;
+    } else if (s.placed !== undefined){
+      const v = data[s.placed], leftover = s.lines.includes(12);
+      s.short = `Write ${v} into A.`;
+      s.why = leftover
+        ? `When one side is empty, what remains on the other side is already sorted and not smaller than anything written. Copying it needs no comparisons.`
+        : `Each item is written once per merge level, so a level writes about n items. The pointers only move forward, which keeps the merge linear.`;
+    } else if (s.doneRange){
+      s.short = `Sub-array merged and sorted.`;
+      s.why = `A[${s.range[0]}..${s.range[1]}] can now be trusted as sorted, so the parent merge can rely on it. This is the combine step of divide and conquer.`;
+    } else if (s.m){
+      s.short = `Copy halves into L and R.`;
+      s.why = `Copying ${size} items costs O(${size}) time and needs extra memory. These temporary L and R arrays are why Merge Sort uses O(n) extra space.`;
+    } else { s.short = s.tech; s.why = ""; }
+  });
+}
+
+/* ================= state ================= */
+let data = [], steps = [], cur = 0, n = 0, playing = false, timer = null;
+let quizOn = false, soundOn = false, score = {r: 0, t: 0}, answered = new Map();
+let streak = 0, detail = true, lastConf = -1;
+let bars = [], idxs = [], tNodes = {}, tEdges = {}, tLast = {}, maxDepth = 1;
+
+/* ================= sound ================= */
+let ac = null;
+function beep(f, d = .08, type = "sine", v = .05){
+  if (!soundOn) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f; g.gain.value = v;
+    o.connect(g); g.connect(ac.destination);
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d);
+    o.start(); o.stop(ac.currentTime + d);
+  }catch(e){}
+}
+
+/* ================= bot ================= */
+const MOUTH = {
+  happy: "M62 96 Q80 109 98 96", wink: "M62 96 Q80 109 98 96", think: "M68 100 H92", focus: "M66 99 Q80 93 94 99",
+  wow: "M72 96 Q80 112 88 96 Q80 90 72 96Z", party: "M60 94 Q80 116 100 94 Z"
+};
+const LOOK = {happy: [0, 0], wink: [1, 0], think: [-3, -3], focus: [0, 0], wow: [0, -2], party: [0, 1]};
+let tw = null;
+function botMood(m, s){
+  $("mouth").setAttribute("d", MOUTH[m] || MOUTH.happy);
+  $("mouth").setAttribute("fill", (m === "wow" || m === "party") ? "#e63946" : "none");
+  $("wink").setAttribute("opacity", m === "wink" ? 1 : 0);
+  $("pl").setAttribute("opacity", m === "wink" ? 0 : 1);
+  let [dx, dy] = LOOK[m] || [0, 0];
+  if (m === "focus" && s && s.cmp) dx = (cur % 2 ? 4 : -4);
+  $("pupils").style.transform = `translate(${dx}px,${dy}px)`;
+  $("bot").classList.toggle("party", m === "party");
+  $("bulb").setAttribute("fill", m === "focus" ? "#ff9f1c" : m === "wow" || m === "party" ? "#3ddc97" : "#3de0ff");
+}
+function say(text){
+  clearInterval(tw);
+  const el = $("bubbleText");
+  if (REDUCE){ el.textContent = text; return; }
+  let i = 0; el.textContent = "";
+  tw = setInterval(() => { i += 3; el.textContent = text.slice(0, i); if (i >= text.length) clearInterval(tw); }, 16);
+}
+
+/* ================= build / load ================= */
+function load(values){
+  stop();
+  data = values.slice(); n = data.length;
+  steps = record(data); annotate(steps); cur = 0; answered = new Map();
+  $("inp").value = data.join(", ");
+  $("scrub").max = steps.length - 1;
+
+  const box = $("bars"); box.innerHTML = ""; bars = []; idxs = [];
+  data.forEach((v, id) => { const b = document.createElement("div"); b.className = "bar"; b.textContent = v; box.appendChild(b); bars[id] = b; });
+  for (let i = 0; i < n; i++){ const d = document.createElement("div"); d.className = "idx"; d.textContent = i; box.appendChild(d); idxs.push(d); }
+
+  const tb = $("treeBox"), svg = $("edges");
+  tb.querySelectorAll(".tn").forEach(e => e.remove()); svg.innerHTML = "";
+  tNodes = {}; tEdges = {}; tLast = {};
+  maxDepth = 1;
+  (function depthOf(lo, hi, d){ maxDepth = Math.max(maxDepth, d + 1); if (lo < hi){ const m = (lo + hi) >> 1; depthOf(lo, m, d + 1); depthOf(m + 1, hi, d + 1); } })(0, n - 1, 0);
+  const ROW = 58, H = (maxDepth - 1) * ROW + 38;
+  tb.style.height = H + "px";
+  svg.setAttribute("viewBox", `0 0 100 ${H}`);
+  (function mk(lo, hi, d, parent){
+    const k = lo + "-" + hi, el = document.createElement("div");
+    el.className = "tn hid";
+    el.style.left = `calc(${lo / n * 100}% + 2px)`;
+    el.style.width = `calc(${(hi - lo + 1) / n * 100}% - 4px)`;
+    el.style.top = d * ROW + "px";
+    tb.appendChild(el); tNodes[k] = el;
+    if (parent){
+      const [pl, ph] = parent.split("-").map(Number);
+      const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      ln.setAttribute("x1", (pl + ph + 1) / 2 / n * 100); ln.setAttribute("y1", (d - 1) * ROW + 38);
+      ln.setAttribute("x2", (lo + hi + 1) / 2 / n * 100); ln.setAttribute("y2", d * ROW);
+      ln.setAttribute("vector-effect", "non-scaling-stroke"); ln.setAttribute("class", "hid");
+      svg.appendChild(ln); tEdges[k] = ln;
+    }
+    if (lo < hi){ const m = (lo + hi) >> 1; mk(lo, m, d + 1, k); mk(m + 1, hi, d + 1, k); }
+  })(0, n - 1, 0, null);
+
+  $("log").innerHTML = steps.map((s, i) => `<li data-i="${i}">${i + 1}. ${s.tech}</li>`).join("");
+  render(true);
+}
+
+/* ================= render ================= */
+function blocked(i = cur){
+  const q = steps[i].quiz;
+  return quizOn && !!q && !answered.has(i);
+}
+function layout(s){
+  const L = {};
+  s.order.forEach((id, i) => L[id] = {slot: i, lift: 0});
+  const m = s.m;
+  if (m){
+    for (let x = m.i; x < m.L.length; x++) L[m.L[x]] = {slot: m.lo + x, lift: 1};
+    for (let y = m.j; y < m.R.length; y++) L[m.R[y]] = {slot: m.mid + 1 + y, lift: 1};
+    m.out.forEach((id, k) => L[id] = {slot: m.lo + k, lift: 0});
+  }
+  return L;
+}
+function role(id, s, L, blk){
+  if (s.final) return "sorted";
+  const slot = L[id].slot;
+  if (s.range && (slot < s.range[0] || slot > s.range[1])) return "dim";
+  if (s.cmp && s.cmp.includes(id)) return "cmp";
+  if (s.placed === id) return "placed";
+  if (s.m){ if (s.m.out.includes(id)) return "merged"; if (s.m.L.includes(id)) return "left"; return "right"; }
+  if (s.doneRange || s.base) return "sorted";
+  if (s.split !== undefined && !blk) return slot <= s.split ? "left" : "right";
+  return "active";
+}
+function renderBars(s, blk){
+  const W = $("stageBox").clientWidth, slotW = W / n, bw = Math.max(12, Math.min(66, slotW - 6));
+  const LIFT = 144, maxH = 120, minH = 28, mx = Math.max(...data, 1);
+  const L = layout(s);
+  data.forEach((v, id) => {
+    const el = bars[id], p = L[id];
+    el.style.width = bw + "px";
+    el.style.height = (minH + v / mx * (maxH - minH)) + "px";
+    el.style.transform = `translate(${p.slot * slotW + (slotW - bw) / 2}px, ${p.lift ? -LIFT : 0}px)`;
+    el.className = "bar " + role(id, s, L, blk) + (s.final ? " hop" : "");
+    el.style.animationDelay = s.final ? p.slot * 60 + "ms" : "";
+    el.style.fontSize = bw < 28 ? "11px" : "";
+  });
+  idxs.forEach((d, i) => { d.style.left = i * slotW + "px"; d.style.width = slotW + "px"; });
+  const band = $("band");
+  if (s.range){ band.style.left = s.range[0] * slotW + "px"; band.style.width = (s.range[1] - s.range[0] + 1) * slotW + "px"; band.style.opacity = 1; } else band.style.opacity = 0;
+  const sl = $("splitLine");
+  if (s.split !== undefined && !blk){ sl.style.left = (s.split + 1) * slotW + "px"; sl.style.opacity = 1; } else sl.style.opacity = 0;
+  const lifted = s.m ? 1 : 0;
+  $("lane").style.opacity = lifted; $("lab1").style.opacity = lifted; $("lab2").style.opacity = lifted;
+  const vs = $("vs");
+  if (s.cmp){
+    const [a, b] = s.cmpVals;
+    vs.style.left = (((L[s.cmp[0]].slot + L[s.cmp[1]].slot) / 2 + .5) * slotW) + "px";
+    vs.textContent = blk ? `${a} ? ${b}` : `${a} ${a <= b ? "≤" : ">"} ${b}`;
+    vs.classList.add("show");
+  } else vs.classList.remove("show");
+}
+function renderTree(s){
+  for (const k in tNodes){
+    const el = tNodes[k], nd = s.tree[k];
+    if (!nd){ el.className = "tn hid"; if (tEdges[k]) tEdges[k].setAttribute("class", "hid"); continue; }
+    el.className = "tn s-" + nd.st + (k === s.cur ? " cur" : "");
+    const sig = nd.vals.join(",");
+    if (tLast[k] !== sig){ el.innerHTML = nd.vals.map(v => `<span class="c">${v}</span>`).join(""); tLast[k] = sig; }
+    if (tEdges[k]) tEdges[k].setAttribute("class", k === s.cur ? "hot" : "");
+  }
+}
+function renderMerge(s){
+  const box = $("merge");
+  if (!s.m){ box.innerHTML = `<p class="muted">When two sorted halves are being merged, this zone shows L and R, the pointers i and j, and the output being filled in.</p>`; return; }
+  const m = s.m, val = id => data[id];
+  const row = (name, arr, p, pn) => `<div class="mrow"><span class="mlab">${name} (${pn} = ${Math.min(p, arr.length)})</span>` +
+    arr.map((id, x) => `<span class="cell ${x < p ? "taken" : x === p ? (s.cmp ? "cmp ptr" : "ptr") : ""}" data-p="${pn}">${val(id)}</span>`).join("") +
+    (p >= arr.length ? `<span class="muted">(empty)</span>` : "") + `</div>`;
+  let out = `<div class="mrow"><span class="mlab">A[${m.lo}..${m.hi}]</span>`;
+  const tot = m.L.length + m.R.length;
+  for (let x = 0; x < tot; x++){
+    out += x < m.out.length ? `<span class="cell ${s.justOut && x === m.out.length - 1 ? "new" : "out"}">${val(m.out[x])}</span>` : `<span class="cell empty">·</span>`;
+  }
+  box.innerHTML = row("L", m.L, m.i, "i") + row("R", m.R, m.j, "j") + out + "</div>";
+}
+function renderQuiz(s, blk){
+  const qb = $("quizBox");
+  $("score").textContent = quizOn ? `${rank()} · ${score.r}/${score.t} · streak ${streak}` : "";
+  if (!(quizOn && s.quiz && !answered.has(cur))){ qb.classList.remove("on"); return; }
+  qb.classList.add("on");
+  const q = s.quiz;
+  if (q.type === "cmp") $("qb").innerHTML = `<button class="btn" data-a="L">${q.a} from L</button><button class="btn" data-a="R">${q.b} from R</button>`;
+  else{
+    const opts = [...new Set([q.mid - 1, q.mid, q.mid + 1].filter(x => x >= q.lo && x < q.hi))];
+    $("qb").innerHTML = opts.map(o => `<button class="btn" data-a="${o}">mid = ${o}</button>`).join("");
+  }
+}
+let lastShown = -1;
+function render(first){
+  const s = steps[cur], blk = blocked();
+  [...$("stages").children].forEach((el, i) => el.className = "stg" + (i === s.stage ? " on" : i < s.stage ? " past" : ""));
+  renderBars(s, blk); renderTree(s); renderMerge(s); renderQuiz(s, blk);
+
+  if (lastShown !== cur || first){
+    if (blk){
+      const q = s.quiz;
+      say(q.type === "cmp" ? `Your turn, hero! L[i] = ${q.a} and R[j] = ${q.b}. Which one is written into A[${q.pos}] next?` : `Your turn, hero! Positions ${q.lo} to ${q.hi}. Where do I cut? What is mid?`);
+      botMood("focus", s);
+    } else { say(detail ? s.bot : s.short); botMood(s.mood, s); }
+    if (!first) popSfx(s.sfx);
+    lastShown = cur;
+  }
+
+  $("stack").innerHTML = s.stack.length ? s.stack.map((f, i) => `<li class="${i === s.stack.length - 1 ? "top" : ""}">${f}</li>`).join("") : "<li>(empty)</li>";
+  [...$("code").children].forEach((el, i) => el.className = s.lines.includes(i) ? "hl" : "");
+  const nl = n * Math.log2(n);
+  $("why").style.display = detail && !blk && s.why ? "" : "none";
+  $("why").innerHTML = `<b>WHY?</b>${s.why}`;
+  const lvRows = Math.max(1, maxDepth - 1);
+  $("lvls").innerHTML = Array.from({length: lvRows}, (_, d) => { const w = s.lw[d] || 0; return `<div class="lvl"><span>Level ${d}</span><div class="track"><i style="width:${Math.min(100, w / n * 100)}%"></i></div><em>${w}/${n}</em></div>`; }).join("");
+  if (!s.final) lastConf = -1;
+  if (s.final && !first && lastConf !== cur){ lastConf = cur; confetti(); }
+  $("sC").textContent = s.cmpN; $("sW").textContent = s.wr; $("sD").textContent = s.depth; $("sN").textContent = n;
+  $("sNL").textContent = `${s.cmpN} / ${nl.toFixed(1)}`;
+  $("meter").style.width = Math.min(100, s.cmpN / nl * 100) + "%";
+  [...$("log").children].forEach((li, i) => li.className = i === cur ? "now" : i > cur ? "fut" : "");
+  const now = $("log").children[cur];
+  if (now && !first){ const lg = $("log"), t = now.offsetTop - lg.offsetTop; if (t < lg.scrollTop || t > lg.scrollTop + lg.clientHeight - 32) lg.scrollTop = t - 70; }
+  $("scrub").value = cur; $("stepLbl").textContent = `${cur + 1} / ${steps.length}`;
+  $("bPrev").disabled = $("bReset").disabled = cur === 0;
+  $("bNext").disabled = $("bEnd").disabled = cur === steps.length - 1;
+
+  if (!first && !blk){
+    if (s.cmp) beep(300 + s.cmpVals[0] * 5, .07);
+    else if (s.placed !== undefined) beep(520 + data[s.placed] * 4, .09, "triangle");
+    else if (s.split !== undefined) beep(240, .06);
+    else if (s.final) [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .18, "triangle", .05), i * 110));
+  }
+}
+function popSfx(t){
+  const e = $("sfx"); e.textContent = t; e.classList.remove("pop"); void e.offsetWidth; e.classList.add("pop");
+}
+
+/* ================= quiz ================= */
+function answer(a){
+  const s = steps[cur], q = s.quiz;
+  if (!q || answered.has(cur)) return;
+  const ok = q.type === "cmp" ? a === q.ans : Number(a) === q.mid;
+  answered.set(cur, ok); score.t++; if (ok) score.r++; streak = ok ? streak + 1 : 0;
+  let fb;
+  if (q.type === "cmp"){
+    const v = q.ans === "L" ? q.a : q.b;
+    fb = ok ? `YES! ${v} is smaller, so it goes next. ` : `Not quite! ${v} goes next. `;
+  } else fb = ok ? `Right on! mid = ${q.mid}. ` : `Close! floor((${q.lo}+${q.hi})/2) = ${q.mid}. `;
+  lastShown = -1; render();
+  say(fb + (detail ? s.bot : s.short));
+  if (ok && streak && streak % 3 === 0) popSfx("COMBO x" + streak + "!");
+  beep(ok ? 880 : 180, ok ? .12 : .2, ok ? "triangle" : "square", .05);
+  if (playing) schedule();
+}
+
+/* ================= navigation ================= */
+function go(i){ cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+function next(){ if (blocked()) return false; if (cur < steps.length - 1){ go(cur + 1); return true; } return false; }
+function delay(){ return 1900 - $("speed").value * 160; }
+function schedule(){ clearTimeout(timer); timer = setTimeout(tick, delay()); }
+function tick(){
+  if (!playing) return;
+  if (cur >= steps.length - 1){ stop(); return; }
+  if (blocked()) return;
+  next();
+  if (cur >= steps.length - 1) stop(); else schedule();
+}
+function play(){
+  if (playing){ stop(); return; }
+  if (cur === steps.length - 1) go(0);
+  playing = true; $("bPlay").textContent = "⏸ Pause"; schedule();
+}
+function stop(){ playing = false; clearTimeout(timer); $("bPlay").textContent = "▶ Play"; }
+
+/* ================= inputs ================= */
+const rnd = (len, lo = 1, hi = 99) => Array.from({length: len}, () => lo + Math.floor(Math.random() * (hi - lo + 1)));
+function preset(kind, len){
+  if (kind === "example") return [38, 27, 43, 3, 9, 82, 10, 15];
+  if (kind === "sorted") return rnd(len).sort((a, b) => a - b);
+  if (kind === "reversed") return rnd(len).sort((a, b) => b - a);
+  if (kind === "nearly"){ const a = rnd(len).sort((x, y) => x - y); for (let k = 0; k < Math.max(1, len / 6); k++){ const i = Math.floor(Math.random() * (len - 1)); [a[i], a[i+1]] = [a[i+1], a[i]]; } return a; }
+  if (kind === "dups"){ const pool = rnd(Math.max(2, Math.floor(len / 3))); return Array.from({length: len}, () => pool[Math.floor(Math.random() * pool.length)]); }
+  return rnd(len);
+}
+function parse(){
+  const vals = $("inp").value.split(/[\s,]+/).filter(Boolean).map(Number);
+  if (vals.some(v => !Number.isInteger(v) || v < 0 || v > 99)) return "Use whole numbers from 0 to 99, separated by commas.";
+  if (vals.length < 2 || vals.length > 16) return "Enter between 2 and 16 numbers.";
+  return vals;
+}
+$("stages").innerHTML = STAGES.map((s, i) => `<button class="stg" data-s="${i}">${s}</button>`).join("");
+$("stages").onclick = e => { const b = e.target.closest("[data-s]"); if (!b) return; stop(); const k = steps.findIndex(s => s.stage === +b.dataset.s); if (k >= 0) go(k); };
+$("code").innerHTML = PSEUDO.map(l => `<div>${l || " "}</div>`).join("");
+$("load").onclick = () => { const r = parse(); if (typeof r === "string"){ $("err").textContent = r; return; } $("err").textContent = ""; load(r); };
+$("inp").addEventListener("keydown", e => { if (e.key === "Enter") $("load").click(); });
+$("preset").onchange = () => { const k = $("preset").value; if (k === "example"){ $("size").value = 8; $("sizeV").textContent = 8; } load(preset(k, +$("size").value)); };
+$("size").oninput = () => { $("sizeV").textContent = $("size").value; if ($("preset").value === "example") $("preset").value = "random"; load(preset($("preset").value, +$("size").value)); };
+$("shuffle").onclick = () => { const a = data.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } load(a); };
+$("bPrev").onclick = () => { stop(); go(cur - 1); };
+$("bNext").onclick = () => { stop(); next(); };
+$("bReset").onclick = () => { stop(); go(0); };
+$("bEnd").onclick = () => { stop(); go(steps.length - 1); };
+$("bPlay").onclick = play;
+$("speed").oninput = () => { if (playing) schedule(); };
+$("scrub").oninput = () => { stop(); go(+$("scrub").value); };
+$("log").onclick = e => { const li = e.target.closest("li"); if (li){ stop(); go(+li.dataset.i); } };
+$("qb").onclick = e => { const b = e.target.closest("button"); if (b) answer(b.dataset.a); };
+$("quizOn").onchange = () => { quizOn = $("quizOn").checked; score = {r: 0, t: 0}; streak = 0; answered = new Map(); lastShown = -1; render(true); };
+$("soundOn").onchange = () => { soundOn = $("soundOn").checked; if (soundOn) beep(660, .08); };
+document.addEventListener("keydown", e => {
+  const t = e.target.tagName;
+  if ((t === "INPUT" && e.target.type === "text") || t === "SELECT") return;
+  if ($("v-sim").hidden) return;
+  if (e.key === "ArrowRight"){ e.preventDefault(); stop(); next(); }
+  else if (e.key === "ArrowLeft"){ e.preventDefault(); stop(); go(cur - 1); }
+  else if (e.key === " "){ e.preventDefault(); play(); }
+  else if (e.key === "Home"){ stop(); go(0); }
+  else if (e.key === "End"){ stop(); go(steps.length - 1); }
+  else if (e.key === "q" || e.key === "Q") $("quizOn").click();
+});
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (!$("v-sim").hidden) renderBars(steps[cur], blocked()); }, 80); });
+
+/* ================= tabs + intel ================= */
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  ["sim", "intel", "race", "code", "viva"].forEach(v => $("v-" + v).hidden = v !== t.dataset.v);
+  stop();
+  if (t.dataset.v === "sim") renderBars(steps[cur], blocked());
+  if (t.dataset.v === "intel"){ drawLevels(); if (!labRows) runLab(); }
+  if (t.dataset.v === "race" && !raceDone){ raceDone = true; runRace(); }
+});
+$("six").innerHTML = BRIEF.map(([h, p], i) => `<div class="card mis"><span class="num">${i + 1}</span><h3>${h}</h3><p>${p}</p><button class="btn" data-g="${i}">Watch it live ▶</button></div>`).join("");
+$("six").onclick = e => { const b = e.target.closest("[data-g]"); if (!b) return; $("tab-sim").click(); const k = steps.findIndex(s => s.stage === +b.dataset.g); if (k >= 0) go(k); };
+
+function countCmp(arr){
+  let c = 0; const a = arr.slice(), t = new Array(a.length);
+  (function ms(lo, hi){
+    if (lo >= hi) return;
+    const mid = (lo + hi) >> 1; ms(lo, mid); ms(mid + 1, hi);
+    let i = lo, j = mid + 1, k = lo;
+    while (i <= mid && j <= hi){ c++; t[k++] = a[i] <= a[j] ? a[i++] : a[j++]; }
+    while (i <= mid) t[k++] = a[i++];
+    while (j <= hi) t[k++] = a[j++];
+    for (let x = lo; x <= hi; x++) a[x] = t[x];
+  })(0, a.length - 1);
+  return c;
+}
+let labRows = null;
+function runLab(){
+  const N = +$("labN").value; labRows = [];
+  for (let m = 2; m <= N; m++){
+    let s = 0; for (let r = 0; r < 20; r++) s += countCmp(rnd(m, 0, 999));
+    labRows.push({n: m, ms: s / 20, nl: m * Math.log2(m), q: m * (m - 1) / 2});
+  }
+  drawChart();
+}
+function drawChart(){
+  const W = 640, H = 300, P = {l: 48, r: 130, t: 14, b: 38};
+  const N = labRows[labRows.length - 1].n, top = labRows[labRows.length - 1].q;
+  const x = v => P.l + (v - 2) / (N - 2) * (W - P.l - P.r), y = v => H - P.b - v / top * (H - P.t - P.b);
+  let g = "";
+  for (let k = 0; k <= 5; k++){
+    const v = top * k / 5;
+    g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#2b3a6e"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#9aa6c7">${Math.round(v)}</text>`;
+  }
+  for (let v = 8; v <= N; v += 8) g += `<text x="${x(v)}" y="${H - P.b + 16}" text-anchor="middle" font-size="11" fill="#9aa6c7">${v}</text>`;
+  g += `<text x="${(P.l + W - P.r) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="#9aa6c7">n (number of elements)</text>`;
+  const path = k => labRows.map((r, i) => (i ? "L" : "M") + x(r.n).toFixed(1) + "," + y(r[k]).toFixed(1)).join("");
+  g += `<path d="${path("nl")}" fill="none" stroke="#9aa6c7" stroke-width="2" stroke-dasharray="6 4"/>`;
+  g += `<path d="${path("q")}" fill="none" stroke="#ff9f1c" stroke-width="3" stroke-linejoin="round"/>`;
+  g += `<path d="${path("ms")}" fill="none" stroke="#3de0ff" stroke-width="3.5" stroke-linejoin="round"/>`;
+  const l = labRows[labRows.length - 1];
+  [[l.q, "Quadratic", "#ff9f1c"], [l.nl, "n·log₂n", "#9aa6c7"], [l.ms, "Merge Sort", "#3de0ff"]].forEach(([v, t, c], i) => {
+    g += `<circle cx="${x(l.n)}" cy="${y(v)}" r="4.5" fill="${c}" stroke="#000" stroke-width="2"/><text x="${x(l.n) + 9}" y="${y(v) + (i === 1 ? 2 : i === 2 ? 14 : 4)}" font-size="12" font-weight="700" fill="#f6f1e4">${t} ${Math.round(v)}</text>`;
+  });
+  $("chart").innerHTML = g;
+}
+$("labN").oninput = () => { $("labNV").textContent = $("labN").value; };
+$("labN").onchange = runLab; $("labRun").onclick = runLab;
+
+/* ================= rank, confetti, facts ================= */
+function rank(){ const r = score.r; return r >= 15 ? "Legend" : r >= 10 ? "Super Hero" : r >= 6 ? "Hero" : r >= 3 ? "Sidekick" : "Rookie"; }
+function confetti(){
+  if (REDUCE) return;
+  const ids = ["#d-star", "#d-bolt", "#d-burst", "#d-spark"];
+  for (let i = 0; i < 28; i++){
+    const d = document.createElement("div"); d.className = "conf";
+    d.style.left = Math.random() * 100 + "vw";
+    d.style.animationDelay = Math.random() * .8 + "s";
+    d.style.animationDuration = 2 + Math.random() * 1.6 + "s";
+    d.innerHTML = `<svg style="width:100%;height:100%"><use href="${ids[i % 4]}"/></svg>`;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 4800);
+  }
+}
+const FACTS = [
+  "John von Neumann invented Merge Sort in 1945, making it one of the oldest algorithms written for a stored-program computer.",
+  "Python's sorted() and list.sort() use Timsort, a hybrid of merge sort and insertion sort.",
+  "Java sorts arrays of objects with Timsort too, which is built on merging runs.",
+  "Merge Sort is the favourite for linked lists: merging needs no random access and no extra array.",
+  "External sorting, for data too big for RAM, sorts chunks and then merges them from disk. That is Merge Sort's idea at work.",
+  "Merge Sort is stable: equal items keep their original order. That is why sorting by marks after sorting by name works.",
+  "The two recursive calls are independent, so Merge Sort parallelizes nicely across CPU cores.",
+  "Even on already sorted input, standard Merge Sort still splits and merges everything. Its best case is Θ(n log n) as well.",
+  "Bottom-up Merge Sort needs no recursion: merge runs of size 1, then 2, 4, 8 and so on.",
+  "Master Theorem: a = 2, b = 2, f(n) = n. Since n^(log₂2) = n matches f(n), that is Case 2 and T(n) = Θ(n log n)."
+];
+let factI = Math.floor(Math.random() * FACTS.length);
+function fact(){ factI = (factI + 1) % FACTS.length; say(FACTS[factI]); botMood("wink"); popSfx("FACT!"); }
+$("factBtn").onclick = fact; $("bot").onclick = fact;
+$("repeatBtn").onclick = () => { lastShown = -1; render(true); };
+$("detailOn").onchange = () => { detail = $("detailOn").checked; lastShown = -1; render(true); };
+
+/* ================= intel: cost per level ================= */
+function drawLevels(){
+  const rows = [];
+  (function f(lo, hi, d){
+    rows[d] = rows[d] || {nodes: 0, elems: 0, merged: 0};
+    rows[d].nodes++; rows[d].elems += hi - lo + 1;
+    if (lo < hi){ rows[d].merged += hi - lo + 1; const m = (lo + hi) >> 1; f(lo, m, d + 1); f(m + 1, hi, d + 1); }
+  })(0, n - 1, 0);
+  let nodes = 0, merged = 0;
+  const body = rows.map((r, d) => { nodes += r.nodes; merged += r.merged; return `<tr><td>${d}</td><td>${r.nodes}</td><td>${r.elems}</td><td>${r.merged}</td></tr>`; }).join("");
+  $("lvlTable").innerHTML = `<tr><th>Level</th><th>Subproblems</th><th>Items covered</th><th>Items merged</th></tr>${body}<tr class="tot"><td>Total</td><td>${nodes}</td><td></td><td>${merged}</td></tr>`;
+  $("lvlNote").textContent = `(current array, n = ${n})`;
+}
+
+/* ================= race ================= */
+function cBubble(a){ a = a.slice(); let c = 0; for (let i = 0; i < a.length - 1; i++){ let sw = false; for (let j = 0; j < a.length - 1 - i; j++){ c++; if (a[j] > a[j+1]){ [a[j], a[j+1]] = [a[j+1], a[j]]; sw = true; } } if (!sw) break; } return c; }
+function cIns(a){ a = a.slice(); let c = 0; for (let i = 1; i < a.length; i++){ const k = a[i]; let j = i - 1; while (j >= 0){ c++; if (a[j] > k){ a[j+1] = a[j]; j--; } else break; } a[j+1] = k; } return c; }
+function cSel(a){ return a.length * (a.length - 1) / 2; }
+function cQuick(a){ a = a.slice(); let c = 0; (function q(lo, hi){ if (lo >= hi) return; const p = a[hi]; let i = lo - 1; for (let j = lo; j < hi; j++){ c++; if (a[j] <= p){ i++; [a[i], a[j]] = [a[j], a[i]]; } } [a[i+1], a[hi]] = [a[hi], a[i+1]]; q(lo, i); q(i + 2, hi); })(0, a.length - 1); return c; }
+const ALGOS = [
+  ["Merge Sort", countCmp, "#3de0ff"],
+  ["Quick Sort*", cQuick, "#a77bff"],
+  ["Insertion Sort", cIns, "#3ddc97"],
+  ["Bubble Sort**", cBubble, "#ff9f1c"],
+  ["Selection Sort", cSel, "#ff5d9e"]
+];
+const TIPS = {
+  random: "On random data Merge Sort and Quick Sort stay near n·log₂n, while the quadratic sorts fall far behind as n grows.",
+  reversed: "Reversed input is the nightmare: Bubble, Insertion, Selection and Quick Sort (last-element pivot) all go quadratic. Merge Sort does not care about the order.",
+  sorted: "Sorted input favours Insertion and Bubble Sort, which need only n − 1 comparisons. Quick Sort with a last-element pivot hits its worst case, and Merge Sort stays steady at about (n/2)·log₂n.",
+  nearly: "Nearly sorted input rewards adaptive sorts like Insertion Sort. That is exactly why Timsort mixes insertion sort with merging."
+};
+let raceDone = false, raceRaf = 0;
+function runRace(){
+  const N = +$("raceN").value, kind = $("raceKind").value;
+  const a = rnd(N, 0, 999);
+  if (kind === "sorted") a.sort((x, y) => x - y);
+  else if (kind === "reversed") a.sort((x, y) => y - x);
+  else if (kind === "nearly"){ a.sort((x, y) => x - y); for (let k = 0; k < Math.max(1, N / 8); k++){ const i = Math.floor(Math.random() * (N - 1)); [a[i], a[i+1]] = [a[i+1], a[i]]; } }
+  const res = ALGOS.map(([nm, fn, col]) => ({nm, col, c: fn(a)}));
+  const mx = Math.max(...res.map(r => r.c), 1), best = Math.min(...res.map(r => r.c));
+  $("raceBoard").innerHTML = res.map((r, i) => `<div class="race" id="rc${i}"><span class="nm" style="color:${r.col}">${r.nm}</span><div class="track"><i style="background:${r.col}"></i></div><b>0</b></div>`).join("");
+  $("raceNote").textContent = "";
+  cancelAnimationFrame(raceRaf);
+  const t0 = performance.now(), dur = REDUCE ? 1 : 2600;
+  (function tick(now){
+    const t = Math.min(1, (now - t0) / dur);
+    res.forEach((r, i) => { const v = Math.min(r.c, mx * t), el = $("rc" + i); el.querySelector("i").style.width = (v / mx * 100) + "%"; el.querySelector("b").textContent = Math.round(v); });
+    if (t < 1) raceRaf = requestAnimationFrame(tick);
+    else {
+      const names = res.filter(r => r.c === best).map(r => r.nm.replace(/\*/g, "")).join(" & ");
+      res.forEach((r, i) => { if (r.c === best) $("rc" + i).classList.add("win"); });
+      $("raceNote").textContent = `Fewest comparisons: ${names} (${best}). ${TIPS[kind]}`;
+    }
+  })(t0);
+}
+$("raceN").oninput = () => { $("raceNV").textContent = $("raceN").value; };
+$("raceN").onchange = runRace; $("raceKind").onchange = runRace; $("raceRun").onclick = runRace;
+
+/* ================= code ================= */
+const CODE = {
+Python: `def merge_sort(a, lo, hi):
+    if lo >= hi:                      # base case: 0 or 1 element
+        return
+    mid = (lo + hi) // 2              # O(1) split
+    merge_sort(a, lo, mid)            # sort left half
+    merge_sort(a, mid + 1, hi)        # sort right half
+    merge(a, lo, mid, hi)             # O(n) combine
+
+def merge(a, lo, mid, hi):
+    L = a[lo:mid + 1]                 # temporary copies (O(n) extra space)
+    R = a[mid + 1:hi + 1]
+    i = j = 0
+    k = lo
+    while i < len(L) and j < len(R):
+        if L[i] <= R[j]:              # <= keeps the sort stable
+            a[k] = L[i]; i += 1
+        else:
+            a[k] = R[j]; j += 1
+        k += 1
+    while i < len(L):                 # copy leftovers
+        a[k] = L[i]; i += 1; k += 1
+    while j < len(R):
+        a[k] = R[j]; j += 1; k += 1
+
+data = [38, 27, 43, 3, 9, 82, 10, 15]
+merge_sort(data, 0, len(data) - 1)
+print(data)`,
+Java: `public class MergeSort {
+    static void mergeSort(int[] a, int lo, int hi) {
+        if (lo >= hi) return;                  // base case
+        int mid = (lo + hi) / 2;               // O(1) split
+        mergeSort(a, lo, mid);
+        mergeSort(a, mid + 1, hi);
+        merge(a, lo, mid, hi);                 // O(n) combine
+    }
+
+    static void merge(int[] a, int lo, int mid, int hi) {
+        int[] L = java.util.Arrays.copyOfRange(a, lo, mid + 1);
+        int[] R = java.util.Arrays.copyOfRange(a, mid + 1, hi + 1);
+        int i = 0, j = 0, k = lo;
+        while (i < L.length && j < R.length)
+            a[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];   // <= keeps it stable
+        while (i < L.length) a[k++] = L[i++];
+        while (j < R.length) a[k++] = R[j++];
+    }
+
+    public static void main(String[] args) {
+        int[] a = {38, 27, 43, 3, 9, 82, 10, 15};
+        mergeSort(a, 0, a.length - 1);
+        System.out.println(java.util.Arrays.toString(a));
+    }
+}`,
+C: `#include <stdio.h>
+#include <stdlib.h>
+
+void merge(int a[], int lo, int mid, int hi) {
+    int nl = mid - lo + 1, nr = hi - mid;
+    int *L = malloc(nl * sizeof(int));
+    int *R = malloc(nr * sizeof(int));
+    for (int x = 0; x < nl; x++) L[x] = a[lo + x];
+    for (int y = 0; y < nr; y++) R[y] = a[mid + 1 + y];
+    int i = 0, j = 0, k = lo;
+    while (i < nl && j < nr)
+        a[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];   /* <= keeps it stable */
+    while (i < nl) a[k++] = L[i++];
+    while (j < nr) a[k++] = R[j++];
+    free(L); free(R);
+}
+
+void merge_sort(int a[], int lo, int hi) {
+    if (lo >= hi) return;                  /* base case */
+    int mid = (lo + hi) / 2;
+    merge_sort(a, lo, mid);
+    merge_sort(a, mid + 1, hi);
+    merge(a, lo, mid, hi);
+}
+
+int main(void) {
+    int a[] = {38, 27, 43, 3, 9, 82, 10, 15}, n = 8;
+    merge_sort(a, 0, n - 1);
+    for (int i = 0; i < n; i++) printf("%d ", a[i]);
+    return 0;
+}`,
+JavaScript: `function mergeSort(a, lo = 0, hi = a.length - 1) {
+  if (lo >= hi) return a;                  // base case
+  const mid = Math.floor((lo + hi) / 2);   // O(1) split
+  mergeSort(a, lo, mid);
+  mergeSort(a, mid + 1, hi);
+  merge(a, lo, mid, hi);                   // O(n) combine
+  return a;
+}
+
+function merge(a, lo, mid, hi) {
+  const L = a.slice(lo, mid + 1);          // temporary copies
+  const R = a.slice(mid + 1, hi + 1);
+  let i = 0, j = 0, k = lo;
+  while (i < L.length && j < R.length)
+    a[k++] = L[i] <= R[j] ? L[i++] : R[j++];   // <= keeps it stable
+  while (i < L.length) a[k++] = L[i++];
+  while (j < R.length) a[k++] = R[j++];
+}
+
+console.log(mergeSort([38, 27, 43, 3, 9, 82, 10, 15]));`
+};
+let lang = "Python";
+function showCode(){
+  $("codeView").textContent = CODE[lang];
+  document.querySelectorAll("#langs .btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === lang));
+}
+$("langs").innerHTML = Object.keys(CODE).map(l => `<button class="btn" data-l="${l}">${l}</button>`).join("");
+$("langs").onclick = e => { const b = e.target.closest("[data-l]"); if (b){ lang = b.dataset.l; showCode(); } };
+$("copyCode").onclick = async () => {
+  const b = $("copyCode");
+  try{ await navigator.clipboard.writeText(CODE[lang]); b.textContent = "Copied!"; }catch(e){ b.textContent = "Select the text and copy"; }
+  setTimeout(() => b.textContent = "Copy code", 1600);
+};
+showCode();
+
+/* ================= viva ================= */
+const VIVA = [
+ ["What is Merge Sort?", "A divide-and-conquer sorting algorithm. It splits the array into halves, sorts each half recursively, and merges the two sorted halves into one sorted array."],
+ ["What is the recurrence, and how is it solved?", "T(n) = 2T(n/2) + Θ(n). With the Master Theorem (a = 2, b = 2, f(n) = n, and n^(log₂2) = n matches f(n)) this is Case 2, so T(n) = Θ(n log n). The recursion tree gives the same answer: about log₂n levels with n work per level."],
+ ["What are the best, average and worst cases?", "All Θ(n log n) for the standard version. It always splits and merges everything, whatever the input order."],
+ ["What is the space complexity?", "O(n) auxiliary space for the temporary L and R arrays, plus O(log n) for the recursion stack."],
+ ["Is it stable? Why?", "Yes. When L[i] equals R[j] we take from L first (the ≤ test), so equal elements keep their original order. Using a strict less-than would break stability."],
+ ["Is it in-place?", "No. The standard array version needs O(n) extra memory. In-place merging exists but is much more complicated and slower in practice."],
+ ["How many comparisons does one merge take?", "Merging sorted lists of sizes a and b needs at most a + b − 1 comparisons and at least min(a, b). Each comparison places exactly one element."],
+ ["How tall is the recursion tree, and how many nodes does it have?", "About ⌈log₂n⌉ + 1 levels. A full tree has n leaves and 2n − 1 nodes in total."],
+ ["What is the worst-case number of comparisons?", "n⌈log₂n⌉ − 2^⌈log₂n⌉ + 1, which is at most n·log₂n."],
+ ["Why is the merge step linear?", "Both pointers only move forward and every iteration writes one element. After a + b iterations everything is placed, so the cost is Θ(a + b)."],
+ ["Merge Sort versus Quick Sort?", "Both average Θ(n log n). Quick Sort is in-place and often faster in practice, but its worst case is Θ(n²) and it is not stable. Merge Sort guarantees Θ(n log n) and is stable, at the cost of O(n) extra space."],
+ ["When would you choose Merge Sort?", "When you need stability, a guaranteed worst case, sorting of linked lists (no random access needed), external sorting of data larger than memory, or easy parallelism."],
+ ["Can it be written without recursion?", "Yes. Bottom-up Merge Sort merges runs of size 1, then 2, 4, 8 and so on until one run covers the whole array."],
+ ["Is Merge Sort adaptive?", "The standard version is not: sorted input still costs Θ(n log n). Timsort adds run detection to become adaptive."],
+ ["Where is it used in real libraries?", "Python's sort and Java's object sort use Timsort, a hybrid of merge sort and insertion sort."]
+];
+$("vivaList").innerHTML = VIVA.map(([q, a]) => `<details class="q"><summary>${q}</summary><p>${a}</p></details>`).join("");
+$("vivaAll").onclick = () => {
+  const ds = [...document.querySelectorAll("#vivaList details")], open = ds.some(d => !d.open);
+  ds.forEach(d => d.open = open);
+  $("vivaAll").textContent = open ? "Collapse all" : "Expand all";
+};
+
+/* ================= go! ================= */
+load([38, 27, 43, 3, 9, 82, 10, 15]);
+</script>
+</body>
+</html>
